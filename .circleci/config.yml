@@ -19,7 +19,6 @@ jobs:
           command: ./play --manuscript .circleci/manuscript.yml --part integrate
   
   build:
-    <<: *defaults
     docker:
       - image: circleci/ruby:2.5
     environment:
