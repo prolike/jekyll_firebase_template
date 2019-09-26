@@ -1,26 +1,7 @@
 defaults: &defaults
   working_directory: ~/repo
-
 version: 2
 jobs:
-
-  integrate:
-    docker:
-      - image: circleci/node:8.10
-    steps:
-      - checkout
-      - run:
-          name: Environment
-          command: |
-            git --version
-            env | sort | grep "CIRCLE"
-      - run:
-          name: Intro
-          command: ./play --manuscript .circleci/manuscript.yml --part gitintro
-      - run:
-          name: Swap to target branch and test integration
-          command: ./play --manuscript .circleci/manuscript.yml --part integrate
-  
   build:
     <<: *defaults
     docker:
@@ -48,60 +29,17 @@ jobs:
           command: |
             bundle exec htmlproofer ./_site \
               --allow-hash-href \
+              --check-favicon  \
               --check-html \
               --disable-external
       - persist_to_workspace:
           root: ./
           paths:
             - _site
-
-  deliver:
-    docker:
-      - image: circleci/node:8.10
-    steps:
-      - checkout
-      - run:
-          name: Intro
-          command: ./play --manuscript .circleci/manuscript.yml --part gitintro
-      - run:
-          name: integrate
-          command: ./play --manuscript .circleci/manuscript.yml --part integrate
-      - run:
-          name: Deliver
-          command: ./play --manuscript .circleci/manuscript.yml --part deliver
-
-  deploy_dev:
-    docker:
-      - image: circleci/node:8.10
-    steps:
-      - attach_workspace:
-          at: ./
-      - run:
-          name: Install Firebase Tools
-          command: sudo npm install --prefix=./firebase-deploy firebase-tools
-      - run:
-          name: Deploy to dev
-          command: sudo ./firebase-deploy/node_modules/.bin/firebase deploy --only hosting -P development --token=$FIREBASE_TOKEN
-
+  
 workflows:
   version: 2
-  projectsProlikeIo:
+  test-deploy:
     jobs:
-      - integrate:
-          filters:
-            branches:
-              only:
-                - /ready\/.+/ 
       - build
-      - deliver:
-          filters:
-            branches:
-              only:
-                - /ready\/.+/ 
-      - deploy_dev: # Staging
-          requires:
-            - build
-          filters:
-              branches:
-                only:
-                  - master
+      
